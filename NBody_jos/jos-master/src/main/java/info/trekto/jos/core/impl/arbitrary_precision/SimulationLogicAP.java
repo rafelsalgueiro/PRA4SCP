@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
-//is this project correct one?
 import static info.trekto.jos.core.Controller.C;
 import static info.trekto.jos.core.numbers.NumberFactoryProxy.*;
 
@@ -22,41 +21,12 @@ import static info.trekto.jos.core.numbers.NumberFactoryProxy.*;
  */
 public class SimulationLogicAP implements SimulationLogic {
     private final Simulation simulation;
-    private final int M = 25;
-    private final List<Long> execTimes = new ArrayList<>();
-    private int particlesEvaluated = 0;
-    private int particlesCollisiones = 0;
-    private long totalTime;
 
     public SimulationLogicAP(Simulation simulation) {
         this.simulation = simulation;
     }
 
-    public void calculateStatics(long time, List<Long> execTimes) {
-//        long sum = 0;
-//        for (Long execTime : execTimes) {
-//            sum += execTime;
-//        }
-//        long avg = sum / simulation.getProperties().getNumberOfThreads();
-//        for (int i = 0; i < execTimes.size(); i++) {
-//            long imbalance = Math.abs(execTimes.get(i) - avg);
-//            double imbalancePercentage = (double) imbalance / avg;
-//            long iterationNum = simulation.getCurrentIterationNumber();
-//            if (iterationNum % M == 0) {
-//                System.out.println("El porcentaje de desbalanceo del hilo es: " + imbalancePercentage);                 //% de desbalanceo de cada hilo
-//                System.out.println("Tiempo de computo requerido para cada hilo " + time + " ns");                       //Tiempo de computo requerido  para hilo por iteracion (en nanosegundos)
-//                System.out.println("Partículas evaluadas: " + particlesEvaluated);                                      //Numero de particulas evaluadas por hilo                 //Numero de particulas evaluadas en total
-//                System.out.println("Particulas fusionadas: " + particlesCollisiones);                                   //Numero de particulas fusionadas
-//            }
-//        }
-
-        /**
-         * - Número de partículas evaluadas.
-         * - Número de partículas fusionadas.
-         */
-    }
-
-    public synchronized void calculateNewValues(int fromIndex, int toIndex) {
+    public void calculateNewValues(int fromIndex, int toIndex) {
         Iterator<SimulationObject> newObjectsIterator = simulation.getAuxiliaryObjects().subList(fromIndex, toIndex).iterator();
 
         /* We should not change oldObject. We can change only newObject. */
@@ -107,46 +77,6 @@ public class SimulationLogicAP implements SimulationLogic {
             }
         }
 
-    }
-
-    public synchronized void calculateAllNewValues() {      //synchronized para que no se ejecute en paralelo
-        int numberOfObjects = 0;
-        long startTime = System.nanoTime();
-        particlesEvaluated++;
-        numberOfObjects = simulation.getObjects().size();
-        int numberOfThreads = simulation.getProperties().getNumberOfThreads();
-        int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
-        int numberOfObjectsLeft = numberOfObjects % numberOfThreads;
-        Semaphore semaphore = new Semaphore(1);
-        int from;
-        int to;
-        for (int i = 0; i < numberOfThreads; i++) {     //calcular particulas por thread
-            from = i * numberOfObjectsPerThread;
-            to = from + numberOfObjectsPerThread - 1;
-            if (numberOfObjectsLeft > 0) {
-                to++;
-                numberOfObjectsLeft--;
-            }
-            if (i == numberOfThreads) {     //ultima particula
-                to = numberOfObjects + 1;
-            }
-            calculateNewValues(from, to);
-
-            long endTime = System.nanoTime();
-            totalTime = endTime - startTime;
-            execTimes.add(totalTime);
-            /**
-             * Si añadimos la funcion calculateStatics el tiempo de ejecucion incrementa hasta 1.32min en vez de 13.17s
-             */
-            /*try {
-                semaphore.acquire();                          //inicio sincronizacion semaforo
-               calculateStatics(totalTime, execTimes);
-            } catch (Exception e) {
-              throw new RuntimeException(e);
-            } finally {
-                semaphore.release();                          //fin sincronizacion semaforo
-               }*/
-        }
     }
 
 
@@ -223,7 +153,6 @@ public class SimulationLogicAP implements SimulationLogic {
         }
         if (mergeOnCollision) {
             simulation.getAuxiliaryObjects().removeAll(forRemoval);
-            particlesCollisiones += 2;
         }
     }
 

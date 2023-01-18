@@ -46,23 +46,23 @@ public class SimulationAP implements Simulation {
 
     private volatile boolean collisionExists;
 
-    class MyThreadCNW extends Thread {
-        private final Boolean saveCurrentIterationToFile;
-        private final long iterationCounterToThread;
+    public List<Thread> threads = new ArrayList<>();                                                   // create threads
+    public class MyThreadCNW extends Thread {
+        private final int initialIndex;
+        private final int finalIndex;
 
-        public MyThreadCNW(boolean saveCurrentIterationToFile, long iterationCounterForThread) {
-            this.saveCurrentIterationToFile = saveCurrentIterationToFile;
-            this.iterationCounterToThread = iterationCounterForThread;
+        public MyThreadCNW(int initialIndex, int finalIndex) {
+            this.initialIndex = initialIndex;
+            this.finalIndex = finalIndex;
         }
 
         @Override
         public void run() {
             try {
-                doIteration(saveCurrentIterationToFile, iterationCounterToThread);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+            simulationLogic.calculateNewValues(initialIndex, finalIndex);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-
         }
     }
 
@@ -112,17 +112,15 @@ public class SimulationAP implements Simulation {
         }
         */
         //new SimulationRecursiveAction(0, objects.size(), this).compute();
-        simulationLogic.calculateAllNewValues();
+       for (Thread t : threads) {
+            t.start();
+        }
 
-        lock.lock();   // Adquirimos el bloqueo
-        try {
+        simulationLogic.calculateNewValues(0, objects.size());
             /* Collision */
             CollisionCheckAP collisionCheck = new CollisionCheckAP(0, auxiliaryObjects.size(), this);
             collisionExists = false;
             collisionCheck.checkAllCollisions();
-        } finally {
-            lock.unlock();   // Liberamos el bloqueo
-        }
         /* If collision/s exists execute sequentially on a single thread */
         if (collisionExists) {
             simulationLogic.processCollisions(this);
@@ -214,7 +212,26 @@ public class SimulationAP implements Simulation {
         long previousTime = startTime;
         long previousVisualizationTime = startTime;
         long endTime;
-
+        int numberOfObjects = 0;
+        numberOfObjects = getObjects().size();
+        int numberOfThreads = getProperties().getNumberOfThreads();
+        int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
+        int numberOfObjectsLeft = numberOfObjects % numberOfThreads;
+        int from;
+        int to;
+        for (int i = 0; i < numberOfThreads; i++) {     //calcular particulas por thread
+            from = i * numberOfObjectsPerThread;
+            to = from + numberOfObjectsPerThread - 1;
+            if (numberOfObjectsLeft > 0) {
+                to++;
+                numberOfObjectsLeft--;
+            }
+            if (i == numberOfThreads) {     //ultima particula
+                to = numberOfObjects + 1;
+            }
+                MyThreadCNW thread = new MyThreadCNW(from,to);     // create thread
+                threads.add(thread);
+        }
         C.setRunning(true);
         C.setHasToStop(false);
         try {
@@ -250,23 +267,19 @@ public class SimulationAP implements Simulation {
 
 
                     Boolean saveCurrentIterationToFile = (i % properties.getSaveEveryNthIteration() == 0);
-                    List<Thread> threads = new ArrayList<>();                                                   // create threads
-                    for (int j = 0; j < properties.getNumberOfThreads(); j++) {                                 //for each thread
-                        MyThreadCNW thread = new MyThreadCNW(saveCurrentIterationToFile, iterationCounter);     // create thread
-                        threads.add(thread);
-                        thread.start();
-                    }
 
-                    // Esperamos a que todos los hilos finalicen
-                    for (Thread threadend : threads) {
-                        try {
-                            threadend.join();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
+                    doIteration(saveCurrentIterationToFile, iterationCounter);
+
                 } catch (InterruptedException e) {
                     error(logger, "Concurrency failure. One of the threads interrupted in cycle " + i, e);
+                }
+            }
+            // Esperamos a que todos los hilos finalicen
+            for (Thread threadend : threads) {
+                try {
+                    threadend.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
 
