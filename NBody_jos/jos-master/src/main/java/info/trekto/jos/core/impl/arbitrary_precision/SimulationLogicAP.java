@@ -33,7 +33,6 @@ public class SimulationLogicAP implements SimulationLogic {
         for (ImmutableSimulationObject oldObject : simulation.getObjects().subList(fromIndex, toIndex)) {
             SimulationObject newObject = newObjectsIterator.next();
 
-
             /* Speed is scalar, velocity is vector. Velocity = speed + direction. */
 
             /* Time T passed */

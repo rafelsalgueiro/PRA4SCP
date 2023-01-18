@@ -115,8 +115,6 @@ public class SimulationAP implements Simulation {
        for (Thread t : threads) {
             t.start();
         }
-
-        simulationLogic.calculateNewValues(0, objects.size());
             /* Collision */
             CollisionCheckAP collisionCheck = new CollisionCheckAP(0, auxiliaryObjects.size(), this);
             collisionExists = false;
@@ -205,7 +203,6 @@ public class SimulationAP implements Simulation {
     @Override
     public void startSimulation() throws SimulationException {
         init(true);
-
         info(logger, "Start simulation...");
         C.setEndText("END.");
         long startTime = System.nanoTime();
