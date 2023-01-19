@@ -2,6 +2,7 @@ package info.trekto.jos.core.impl.arbitrary_precision;
 
 import info.trekto.jos.core.ForceCalculator;
 import info.trekto.jos.core.Simulation;
+import info.trekto.jos.core.SimulationLogic;
 import info.trekto.jos.core.exceptions.SimulationException;
 import info.trekto.jos.core.impl.Iteration;
 import info.trekto.jos.core.impl.SimulationProperties;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
+
 import static info.trekto.jos.core.Controller.C;
 // import static info.trekto.jos.core.impl.arbitrary_precision.SimulationRecursiveAction.threshold;
 import static info.trekto.jos.util.Utils.*;
@@ -31,6 +33,8 @@ import static info.trekto.jos.util.Utils.*;
  * @author Trayan Momkov
  * 2017-May-18
  */
+
+
 public class SimulationAP implements Simulation {
     private static final Logger logger = LoggerFactory.getLogger(SimulationAP.class);
     public static final int PAUSE_SLEEP_MILLISECONDS = 100;
@@ -46,25 +50,26 @@ public class SimulationAP implements Simulation {
 
     private volatile boolean collisionExists;
 
-    public List<Thread> threads = new ArrayList<>();                                                   // create threads
-    public class MyThreadCNW extends Thread {
-        private final int initialIndex;
-        private final int finalIndex;
+    public List<Thread> threads = new ArrayList<>();
 
-        public MyThreadCNW(int initialIndex, int finalIndex) {
-            this.initialIndex = initialIndex;
-            this.finalIndex = finalIndex;
-        }
+        public class MyThreadCNW extends Thread {
+            private final int initialIndex;
+            private final int finalIndex;
 
-        @Override
-        public void run() {
-            try {
-            simulationLogic.calculateNewValues(initialIndex, finalIndex);
-            } catch (Exception e) {
-                e.printStackTrace();
+            public MyThreadCNW(int initialIndex, int finalIndex) {
+                this.initialIndex = initialIndex;
+                this.finalIndex = finalIndex;
             }
-        }
-    }
+
+            @Override
+            public void run() {
+                try {
+                    simulationLogic.calculateNewValues(initialIndex, finalIndex);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }// create threads
 
     public SimulationAP(SimulationProperties properties) {
         simulationLogic = new SimulationLogicAP(this);
@@ -112,13 +117,11 @@ public class SimulationAP implements Simulation {
         }
         */
         //new SimulationRecursiveAction(0, objects.size(), this).compute();
-       for (Thread t : threads) {
-            t.start();
-        }
-            /* Collision */
-            CollisionCheckAP collisionCheck = new CollisionCheckAP(0, auxiliaryObjects.size(), this);
-            collisionExists = false;
-            collisionCheck.checkAllCollisions();
+        simulationLogic.calculateNewValues(0, objects.size());
+        /* Collision */
+        CollisionCheckAP collisionCheck = new CollisionCheckAP(0, auxiliaryObjects.size(), this);
+        collisionExists = false;
+        collisionCheck.checkAllCollisions();
         /* If collision/s exists execute sequentially on a single thread */
         if (collisionExists) {
             simulationLogic.processCollisions(this);
@@ -203,6 +206,7 @@ public class SimulationAP implements Simulation {
     @Override
     public void startSimulation() throws SimulationException {
         init(true);
+
         info(logger, "Start simulation...");
         C.setEndText("END.");
         long startTime = System.nanoTime();
@@ -226,12 +230,17 @@ public class SimulationAP implements Simulation {
             if (i == numberOfThreads) {     //ultima particula
                 to = numberOfObjects + 1;
             }
-                MyThreadCNW thread = new MyThreadCNW(from,to);     // create thread
-                threads.add(thread);
+            MyThreadCNW thread = new MyThreadCNW(from, to);     // create thread
+            threads.add(thread);
+
         }
         C.setRunning(true);
         C.setHasToStop(false);
         try {
+            for (Thread thread : threads) {
+                thread.start();
+            }
+
             for (long i = 0; properties.isInfiniteSimulation() || i < properties.getNumberOfIterations(); i++) {
                 try {
                     if (C.hasToStop()) {
@@ -271,14 +280,6 @@ public class SimulationAP implements Simulation {
                     error(logger, "Concurrency failure. One of the threads interrupted in cycle " + i, e);
                 }
             }
-            // Esperamos a que todos los hilos finalicen
-            for (Thread threadend : threads) {
-                try {
-                    threadend.join();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
 
             if (properties.isRealTimeVisualization()) {
                 C.getVisualizer().end();
@@ -289,6 +290,15 @@ public class SimulationAP implements Simulation {
             if (properties.isSaveToFile()) {
                 C.getReaderWriter().endFile();
             }
+            // Esperamos a que todos los hilos finalicen
+            for (Thread threadEnd : threads) {
+                try {
+                    threadEnd.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
         }
 
         info(logger, "End of simulation. Time: " + nanoToHumanReadable(endTime - startTime));

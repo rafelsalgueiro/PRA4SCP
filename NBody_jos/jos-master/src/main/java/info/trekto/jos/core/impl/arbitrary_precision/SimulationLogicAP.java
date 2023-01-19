@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
+
 import static info.trekto.jos.core.Controller.C;
 import static info.trekto.jos.core.numbers.NumberFactoryProxy.*;
 
@@ -27,6 +28,7 @@ public class SimulationLogicAP implements SimulationLogic {
     }
 
     public void calculateNewValues(int fromIndex, int toIndex) {
+        System.out.println ("calculateNewValues fromIndex=" + fromIndex + " toIndex=" + toIndex);
         Iterator<SimulationObject> newObjectsIterator = simulation.getAuxiliaryObjects().subList(fromIndex, toIndex).iterator();
 
         /* We should not change oldObject. We can change only newObject. */
