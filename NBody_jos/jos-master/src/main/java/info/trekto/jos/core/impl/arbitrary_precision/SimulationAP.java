@@ -50,6 +50,7 @@ public class SimulationAP implements Simulation {
 
     private volatile boolean collisionExists;
 
+    public Semaphore semaforoCV = new Semaphore(0);
     public List<Thread> threads = new ArrayList<>();
 
         public class MyThreadCNW extends Thread {
@@ -64,6 +65,7 @@ public class SimulationAP implements Simulation {
             @Override
             public void run() {
                 try {
+                    semaforoCV.acquire();
                     simulationLogic.calculateNewValues(initialIndex, finalIndex);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -118,6 +120,7 @@ public class SimulationAP implements Simulation {
         */
         //new SimulationRecursiveAction(0, objects.size(), this).compute();
         simulationLogic.calculateNewValues(0, objects.size());
+        semaforoCV.release(properties.getNumberOfThreads());
         /* Collision */
         CollisionCheckAP collisionCheck = new CollisionCheckAP(0, auxiliaryObjects.size(), this);
         collisionExists = false;
@@ -231,7 +234,7 @@ public class SimulationAP implements Simulation {
                 to = numberOfObjects + 1;
             }
             MyThreadCNW thread = new MyThreadCNW(from, to);     // create thread
-            threads.add(thread);
+            threads.add(thread); 
 
         }
         C.setRunning(true);
