@@ -53,25 +53,32 @@ public class SimulationAP implements Simulation {
     public Semaphore semaforoCV = new Semaphore(0);
     public List<Thread> threads = new ArrayList<>();
 
-        public class MyThreadCNW extends Thread {
-            private final int initialIndex;
-            private final int finalIndex;
+    public class MyThreadCNW extends Thread {
+        private final int initialIndex;
+        private final int finalIndex;
 
-            public MyThreadCNW(int initialIndex, int finalIndex) {
-                this.initialIndex = initialIndex;
-                this.finalIndex = finalIndex;
-            }
+        public MyThreadCNW(int initialIndex, int finalIndex) {
+            this.initialIndex = initialIndex;
+            this.finalIndex = finalIndex;
+        }
 
-            @Override
-            public void run() {
-                try {
+        @Override
+        public void run() {
+            try {
+                while (true) {
                     semaforoCV.acquire();
                     simulationLogic.calculateNewValues(initialIndex, finalIndex);
-                } catch (Exception e) {
-                    e.printStackTrace();
+                    if (properties.getNumberOfIterations() == iterationCounter) {
+                        for (Thread thread : threads) {
+                            thread.join();
+                        }
+                    }
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        }// create threads
+        }
+    }// create threads
 
     public SimulationAP(SimulationProperties properties) {
         simulationLogic = new SimulationLogicAP(this);
@@ -233,7 +240,7 @@ public class SimulationAP implements Simulation {
                 to = numberOfObjects + 1;
             }
             MyThreadCNW thread = new MyThreadCNW(from, to);     // create thread
-            threads.add(thread); 
+            threads.add(thread);
 
         }
         C.setRunning(true);
