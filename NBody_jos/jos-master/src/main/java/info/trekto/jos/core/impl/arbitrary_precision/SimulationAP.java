@@ -50,16 +50,19 @@ public class SimulationAP implements Simulation {
 
     private volatile boolean collisionExists;
 
+    public ReentrantLock lock = new ReentrantLock();
     public Semaphore semaforoCV = new Semaphore(0);
     public List<Thread> threads = new ArrayList<>();
 
     public class MyThreadCNW extends Thread {
-        private final int initialIndex;
-        private final int finalIndex;
+        private int initialIndex;
+        private int finalIndex;
+        private int idThread;
 
-        public MyThreadCNW(int initialIndex, int finalIndex) {
+        public MyThreadCNW(int initialIndex, int finalIndex, int idThread) {
             this.initialIndex = initialIndex;
             this.finalIndex = finalIndex;
+            this.idThread = idThread;
         }
 
         @Override
@@ -67,6 +70,22 @@ public class SimulationAP implements Simulation {
             try {
                 while (true) {
                     semaforoCV.acquire();
+                    lock.lock();
+                    int numberOfObjects = 0;
+                    numberOfObjects = properties.getNumberOfObjects();
+                    int numberOfThreads = properties.getNumberOfThreads();
+                    int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
+                    int from;
+                    int to;
+                    from = initialIndex * numberOfObjectsPerThread;
+                    to = finalIndex * numberOfObjectsPerThread;
+                    if (idThread != properties.getNumberOfThreads() && to > 0) {
+                        to = to - 1;
+                    }
+                    initialIndex = from;
+                    finalIndex = to;
+
+                    lock.unlock();
                     simulationLogic.calculateNewValues(initialIndex, finalIndex);
                     if (properties.getNumberOfIterations() == iterationCounter) {
                         for (Thread thread : threads) {
@@ -74,15 +93,33 @@ public class SimulationAP implements Simulation {
                         }
                     }
                 }
-            } catch (Exception e) {
+            } catch (
+                    Exception e) {
                 e.printStackTrace();
             }
         }
+
     }// create threads
+
+    public void calculatePropertiesThread() {
+        int from = 0;
+        int to = 0;
+        int idThread = 0;
+        for (int i = 0; i < properties.getNumberOfThreads(); i++) {
+            MyThreadCNW thread = new MyThreadCNW(from, to, idThread);     // create thread
+            threads.add(thread);
+        }
+    }
+
 
     public SimulationAP(SimulationProperties properties) {
         simulationLogic = new SimulationLogicAP(this);
         this.properties = properties;
+        calculatePropertiesThread();
+        for (Thread thread : threads) {
+
+            thread.start();
+        }
     }
 
     public boolean collisionExists(List<SimulationObject> objects) {
@@ -222,33 +259,9 @@ public class SimulationAP implements Simulation {
         long previousTime = startTime;
         long previousVisualizationTime = startTime;
         long endTime;
-        int numberOfObjects = 0;
-        numberOfObjects = getObjects().size();
-        int numberOfThreads = getProperties().getNumberOfThreads();
-        int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
-        int numberOfObjectsLeft = numberOfObjects % numberOfThreads;
-        int from;
-        int to;
-        for (int i = 0; i < numberOfThreads; i++) {     //calcular particulas por thread
-            from = i * numberOfObjectsPerThread;
-            to = from + numberOfObjectsPerThread - 1;
-            if (numberOfObjectsLeft > 0) {
-                to++;
-                numberOfObjectsLeft--;
-            }
-            if (i == numberOfThreads) {     //ultima particula
-                to = numberOfObjects + 1;
-            }
-            MyThreadCNW thread = new MyThreadCNW(from, to);     // create thread
-            threads.add(thread);
-
-        }
         C.setRunning(true);
         C.setHasToStop(false);
         try {
-            for (Thread thread : threads) {
-                thread.start();
-            }
 
             for (long i = 0; properties.isInfiniteSimulation() || i < properties.getNumberOfIterations(); i++) {
                 try {

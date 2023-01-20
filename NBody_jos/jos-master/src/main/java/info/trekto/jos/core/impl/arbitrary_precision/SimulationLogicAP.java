@@ -28,14 +28,13 @@ public class SimulationLogicAP implements SimulationLogic {
     }
 
     public void calculateNewValues(int fromIndex, int toIndex) {
-        System.out.println("calculateNewValues fromIndex=" + fromIndex + " toIndex=" + toIndex + " thread number:" + Thread.currentThread().getId());
         lock.lock();
         Iterator<SimulationObject> newObjectsIterator = simulation.getAuxiliaryObjects().subList(fromIndex, toIndex).iterator();
         lock.unlock();
         /* We should not change oldObject. We can change only newObject. */
         for (ImmutableSimulationObject oldObject : simulation.getObjects().subList(fromIndex, toIndex)) {
+            lock.lock();
             SimulationObject newObject = newObjectsIterator.next();
-
             /* Speed is scalar, velocity is vector. Velocity = speed + direction. */
 
             /* Time T passed */
@@ -44,15 +43,18 @@ public class SimulationLogicAP implements SimulationLogic {
             /* For the time T, forces accelerated the objects (changed their velocities).
              * Forces are calculated having the positions of the objects at the beginning of the period,
              * and these forces are applied for time T. */
+
             TripleNumber acceleration = new TripleNumber();
+            lock.unlock();
             for (ImmutableSimulationObject tempObject : simulation.getObjects().subList(fromIndex, toIndex)) {
                 if (tempObject == oldObject) {
                     continue;
                 }
                 /* Calculate force */
+                lock.lock();
                 Number distance = calculateDistance(oldObject, tempObject);
                 TripleNumber force = simulation.getForceCalculator().calculateForceAsVector(oldObject, tempObject, distance);
-
+                lock.unlock();
                 /* Add to current acceleration */
                 synchronized (this) {
                     acceleration = calculateAcceleration(oldObject, acceleration, force);
