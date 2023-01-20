@@ -109,7 +109,6 @@ public class SimulationAP implements Simulation {
     }
 
     public void doIteration(boolean saveCurrentIterationToFile, long iterationCounter) throws InterruptedException {
-        ReentrantLock lock = new ReentrantLock();   // Creamos una instancia de ReentrantLock
         auxiliaryObjects = deepCopy(objects);
 
         /* Distribute simulation objects per threads and start execution *

@@ -10,7 +10,6 @@ import info.trekto.jos.core.numbers.Number;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static info.trekto.jos.core.Controller.C;
@@ -22,15 +21,17 @@ import static info.trekto.jos.core.numbers.NumberFactoryProxy.*;
  */
 public class SimulationLogicAP implements SimulationLogic {
     private final Simulation simulation;
+    private final ReentrantLock lock = new ReentrantLock();
 
     public SimulationLogicAP(Simulation simulation) {
         this.simulation = simulation;
     }
 
     public void calculateNewValues(int fromIndex, int toIndex) {
-        System.out.println ("calculateNewValues fromIndex=" + fromIndex + " toIndex=" + toIndex);
+        System.out.println("calculateNewValues fromIndex=" + fromIndex + " toIndex=" + toIndex);
+        lock.lock();
         Iterator<SimulationObject> newObjectsIterator = simulation.getAuxiliaryObjects().subList(fromIndex, toIndex).iterator();
-
+        lock.unlock();
         /* We should not change oldObject. We can change only newObject. */
         for (ImmutableSimulationObject oldObject : simulation.getObjects().subList(fromIndex, toIndex)) {
             SimulationObject newObject = newObjectsIterator.next();
@@ -53,28 +54,36 @@ public class SimulationLogicAP implements SimulationLogic {
                 TripleNumber force = simulation.getForceCalculator().calculateForceAsVector(oldObject, tempObject, distance);
 
                 /* Add to current acceleration */
-                acceleration = calculateAcceleration(oldObject, acceleration, force);
+                synchronized (this) {
+                    acceleration = calculateAcceleration(oldObject, acceleration, force);
+                }
             }
 
             /* Move objects */
             /* For the time T, velocity moved the objects (changed their positions).
              * New objects positions are calculated having the velocity at the beginning of the period,
              * and these velocities are applied for time T. */
-            moveObject(newObject);
+            lock.lock();
+            try {
+                moveObject(newObject);
 
-            /* Change velocity */
-            /* For the time T, accelerations changed the velocities.
-             * Velocities are calculated having the accelerations of the objects at the beginning of the period,
-             * and these accelerations are applied for time T. */
-            newObject.setVelocity(calculateVelocity(oldObject));
+                /* Change velocity */
+                /* For the time T, accelerations changed the velocities.
+                 * Velocities are calculated having the accelerations of the objects at the beginning of the period,
+                 * and these accelerations are applied for time T. */
+                newObject.setVelocity(calculateVelocity(oldObject));
 
-            /* Change the acceleration */
-            newObject.setAcceleration(acceleration);
-
+                /* Change the acceleration */
+                newObject.setAcceleration(acceleration);
+            } finally {
+                lock.unlock();
+            }
             /* Bounce from screen borders */
             /* Only change the direction of the velocity */
-            if (simulation.getProperties().isBounceFromScreenBorders()) {
-                bounceFromScreenBorders(newObject);
+            synchronized (this) {
+                if (simulation.getProperties().isBounceFromScreenBorders()) {
+                    bounceFromScreenBorders(newObject);
+                }
             }
         }
 
