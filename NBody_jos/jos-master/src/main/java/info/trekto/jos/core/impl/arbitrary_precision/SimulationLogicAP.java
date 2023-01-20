@@ -28,7 +28,7 @@ public class SimulationLogicAP implements SimulationLogic {
     }
 
     public void calculateNewValues(int fromIndex, int toIndex) {
-        System.out.println("calculateNewValues fromIndex=" + fromIndex + " toIndex=" + toIndex);
+        System.out.println("calculateNewValues fromIndex=" + fromIndex + " toIndex=" + toIndex + " thread number:" + Thread.currentThread().getId());
         lock.lock();
         Iterator<SimulationObject> newObjectsIterator = simulation.getAuxiliaryObjects().subList(fromIndex, toIndex).iterator();
         lock.unlock();
