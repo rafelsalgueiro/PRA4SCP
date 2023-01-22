@@ -82,10 +82,12 @@ public class SimulationAP implements Simulation {
                     if (idThread != properties.getNumberOfThreads() && to > 0) {
                         to = to - 1;
                     }
+
                     initialIndex = from;
                     finalIndex = to;
 
                     lock.unlock();
+                    printStatics (idThread);
                     simulationLogic.calculateNewValues(initialIndex, finalIndex);
                     if (properties.getNumberOfIterations() == iterationCounter) {
                         for (Thread thread : threads) {
@@ -101,11 +103,15 @@ public class SimulationAP implements Simulation {
 
     }// create threads
 
+    public void printStatics(int idThread) {
+        logger.info("Thread " + idThread + " is running");
+    }
     public void calculatePropertiesThread() {
         int from = 0;
         int to = 0;
         int idThread = 0;
         for (int i = 0; i < properties.getNumberOfThreads(); i++) {
+            idThread++;
             MyThreadCNW thread = new MyThreadCNW(from, to, idThread);     // create thread
             threads.add(thread);
         }
