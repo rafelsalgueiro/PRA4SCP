@@ -49,7 +49,10 @@ public class SimulationAP implements Simulation {
     private List<SimulationObject> auxiliaryObjects;
 
     private volatile boolean collisionExists;
-
+    public int M = 25;
+    public List<Long> times = new ArrayList<>(properties.getNumberOfThreads());
+    public List<Integer> evaluatedParticles = new ArrayList<>(properties.getNumberOfThreads());
+    public List<Integer> particlesMerged = new ArrayList<>(properties.getNumberOfThreads());
     public ReentrantLock lock = new ReentrantLock();
     public Semaphore semaforoCV = new Semaphore(0);
     public List<Thread> threads = new ArrayList<>();
@@ -57,12 +60,16 @@ public class SimulationAP implements Simulation {
     public class MyThreadCNW extends Thread {
         private int initialIndex;
         private int finalIndex;
-        private int idThread;
+        private static int idThread;
 
         public MyThreadCNW(int initialIndex, int finalIndex, int idThread) {
             this.initialIndex = initialIndex;
             this.finalIndex = finalIndex;
             this.idThread = idThread;
+        }
+
+        public static int getIdThread() {
+            return idThread;
         }
 
         @Override
@@ -87,8 +94,15 @@ public class SimulationAP implements Simulation {
                     finalIndex = to;
 
                     lock.unlock();
-                    printStatics (idThread);
+
                     simulationLogic.calculateNewValues(initialIndex, finalIndex);
+                    lock.lock();
+                    if (iterationCounter % M == 0) {                 //Cada M iteraciones se imprimen las estadisticas
+                        for (int i = 0; i <= properties.getNumberOfThreads(); i++) {
+                            printStatics(idThread, times, evaluatedParticles, particlesMerged);
+                        }
+                    }
+                    lock.unlock();
                     if (properties.getNumberOfIterations() == iterationCounter) {
                         for (Thread thread : threads) {
                             thread.join();
@@ -101,16 +115,18 @@ public class SimulationAP implements Simulation {
             }
         }
 
-    }// create threads
-
-    public void printStatics(int idThread) {
-        logger.info("Thread " + idThread + " is running");
     }
+
+    public void printStatics(int idThread, List<Long> times, List<Integer> evaluatedParticles, List<Integer> particlesMerged) {
+        System.out.println("Thread " + idThread + " is running in iteration number:" + iterationCounter);
+        System.out.println(particlesMerged.get(idThread) + " particles have been merged");
+    }
+
     public void calculatePropertiesThread() {
         int from = 0;
         int to = 0;
         int idThread = 0;
-        for (int i = 0; i < properties.getNumberOfThreads(); i++) {
+        for (int i = 0; i < properties.getNumberOfThreads()-1; i++) {
             idThread++;
             MyThreadCNW thread = new MyThreadCNW(from, to, idThread);     // create thread
             threads.add(thread);
@@ -160,7 +176,6 @@ public class SimulationAP implements Simulation {
 
     public void doIteration(boolean saveCurrentIterationToFile, long iterationCounter) throws InterruptedException {
         auxiliaryObjects = deepCopy(objects);
-
         /* Distribute simulation objects per threads and start execution *
         threshold = objects.size() / CORES;
         if (threshold < 20) {
@@ -268,7 +283,6 @@ public class SimulationAP implements Simulation {
         C.setRunning(true);
         C.setHasToStop(false);
         try {
-
             for (long i = 0; properties.isInfiniteSimulation() || i < properties.getNumberOfIterations(); i++) {
                 try {
                     if (C.hasToStop()) {
