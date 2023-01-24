@@ -72,7 +72,12 @@ public class SimulationAP implements Simulation {
             try {
                 while (true) {
                     semaforoCV.acquire();
+                    lock.lock();
                     simulationLogic.threadFunction(idThread, initialIndex, finalIndex);
+                    lock.unlock();
+                    if (iterationCounter == properties.getNumberOfIterations()) {
+                        return;
+                    }
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -109,10 +114,9 @@ public class SimulationAP implements Simulation {
     }
 
 
-    public SimulationAP(SimulationProperties properties, Simulation simulation) {
+    public SimulationAP(SimulationProperties properties) {
         simulationLogic = new SimulationLogicAP(this);
         this.properties = properties;
-        this.simulation = simulation;
         calculatePropertiesThread();
         for (Thread thread : threads) {
             thread.start();

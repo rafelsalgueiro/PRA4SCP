@@ -41,62 +41,7 @@ public class SimulationFloat extends SimulationAP implements Simulation {
     private boolean executingOnCpu;
 
     public SimulationFloat(SimulationProperties properties, SimulationAP cpuSimulation) {
-        super(properties, new Simulation() {
-            @Override
-            public void startSimulation() throws SimulationException {
-
-            }
-
-            @Override
-            public List<SimulationObject> getObjects() {
-                return null;
-            }
-
-            @Override
-            public List<SimulationObject> getAuxiliaryObjects() {
-                return null;
-            }
-
-            @Override
-            public long getCurrentIterationNumber() {
-                return 0;
-            }
-
-            @Override
-            public ForceCalculator getForceCalculator() {
-                return null;
-            }
-
-            @Override
-            public void playSimulation(String absolutePath) {
-
-            }
-
-            @Override
-            public SimulationProperties getProperties() {
-                return null;
-            }
-
-            @Override
-            public void setProperties(SimulationProperties properties) {
-
-            }
-
-            @Override
-            public Number calculateDistance(ImmutableSimulationObject object, ImmutableSimulationObject object1) {
-                return null;
-            }
-
-            @Override
-            public boolean isCollisionExists() {
-                return false;
-            }
-
-            @Override
-            public void upCollisionExists() {
-
-            }
-        });
+        super(properties);
         final int n = properties.getNumberOfObjects();
         int screenWidth = 0;
         int screenHeight = 0;

@@ -40,10 +40,8 @@ public class SimulationLogicAP implements SimulationLogic {
 
         lock.lock();
         Iterator<SimulationObject> newObjectsIterator = simulation.getAuxiliaryObjects().subList(fromIndex, toIndex).iterator();
-        lock.unlock();
         /* We should not change oldObject. We can change only newObject. */
         for (ImmutableSimulationObject oldObject : simulation.getObjects().subList(fromIndex, toIndex)) {
-            lock.lock();
             SimulationObject newObject = newObjectsIterator.next();
             /* Speed is scalar, velocity is vector. Velocity = speed + direction. */
 
@@ -55,16 +53,13 @@ public class SimulationLogicAP implements SimulationLogic {
              * and these forces are applied for time T. */
 
             TripleNumber acceleration = new TripleNumber();
-            lock.unlock();
             for (ImmutableSimulationObject tempObject : simulation.getObjects().subList(fromIndex, toIndex)) {
                 if (tempObject == oldObject) {
                     continue;
                 }
                 /* Calculate force */
-                lock.lock();
                 Number distance = calculateDistance(oldObject, tempObject);
                 TripleNumber force = simulation.getForceCalculator().calculateForceAsVector(oldObject, tempObject, distance);
-                lock.unlock();
                 /* Add to current acceleration */
                 synchronized (this) {
                     acceleration = calculateAcceleration(oldObject, acceleration, force);
@@ -75,21 +70,16 @@ public class SimulationLogicAP implements SimulationLogic {
             /* For the time T, velocity moved the objects (changed their positions).
              * New objects positions are calculated having the velocity at the beginning of the period,
              * and these velocities are applied for time T. */
-            lock.lock();
-            try {
-                moveObject(newObject);
+            moveObject(newObject);
 
-                /* Change velocity */
-                /* For the time T, accelerations changed the velocities.
-                 * Velocities are calculated having the accelerations of the objects at the beginning of the period,
-                 * and these accelerations are applied for time T. */
-                newObject.setVelocity(calculateVelocity(oldObject));
+            /* Change velocity */
+            /* For the time T, accelerations changed the velocities.
+             * Velocities are calculated having the accelerations of the objects at the beginning of the period,
+             * and these accelerations are applied for time T. */
+            newObject.setVelocity(calculateVelocity(oldObject));
 
-                /* Change the acceleration */
-                newObject.setAcceleration(acceleration);
-            } finally {
-                lock.unlock();
-            }
+            /* Change the acceleration */
+            newObject.setAcceleration(acceleration);
             /* Bounce from screen borders */
             /* Only change the direction of the velocity */
             synchronized (this) {
@@ -98,7 +88,7 @@ public class SimulationLogicAP implements SimulationLogic {
                 }
             }
         }
-
+        lock.unlock();
     }
 
     public void threadFunction(int idThread, int initialIndex, int finalIndex) {
@@ -115,9 +105,6 @@ public class SimulationLogicAP implements SimulationLogic {
         lock.unlock();
         //printStatics (idThread);
         calculateNewValues(initialIndex, finalIndex);
-        if (simulation.getProperties().getNumberOfIterations() == simulation.getCurrentIterationNumber()) {
-            return;
-        }
     }
 
 
