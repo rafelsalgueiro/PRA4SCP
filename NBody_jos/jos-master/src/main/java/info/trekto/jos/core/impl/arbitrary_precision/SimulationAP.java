@@ -54,6 +54,7 @@ public class SimulationAP implements Simulation {
 
     public ReentrantLock lock = new ReentrantLock();
     public Semaphore semaforoCV = new Semaphore(0);
+    public Semaphore semaforo2 = new Semaphore(1);
     public List<Thread> threads = new ArrayList<>();
 
     public class MyThreadCNW extends Thread {
@@ -75,6 +76,7 @@ public class SimulationAP implements Simulation {
                     lock.lock();
                     simulationLogic.threadFunction(idThread, initialIndex, finalIndex);
                     lock.unlock();
+                    semaforo2.release();
                     if (iterationCounter == properties.getNumberOfIterations()) {
                         return;
                     }
@@ -163,6 +165,7 @@ public class SimulationAP implements Simulation {
         }
         */
         //new SimulationRecursiveAction(0, objects.size(), this).compute();
+        semaforo2.acquire();
         simulationLogic.calculateAllNewValues();
         semaforoCV.release(properties.getNumberOfThreads());
         /* Collision */
