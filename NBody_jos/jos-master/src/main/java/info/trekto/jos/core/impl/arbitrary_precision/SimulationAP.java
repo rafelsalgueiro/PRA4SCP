@@ -177,7 +177,7 @@ public class SimulationAP implements Simulation {
         }
         */
         //new SimulationRecursiveAction(0, objects.size(), this).compute();
-        simulationLogic.calculateNewValues(0, objects.size());
+        simulationLogic.calculateAllNewValues();
         semaforoCV.release(properties.getNumberOfThreads());
         /* Collision */
         CollisionCheckAP collisionCheck = new CollisionCheckAP(0, auxiliaryObjects.size(), this);

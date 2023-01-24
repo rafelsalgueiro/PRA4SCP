@@ -27,6 +27,14 @@ public class SimulationLogicAP implements SimulationLogic {
         this.simulation = simulation;
     }
 
+    public void calculateAllNewValues() {
+        int numberOfObjects = simulation.getObjects().size();
+        int numberOfThreads = simulation.getProperties().getNumberOfThreads();
+        int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
+        int from = 0;
+        int to = numberOfObjectsPerThread;
+        calculateNewValues(from, to);
+    }
     public void calculateNewValues(int fromIndex, int toIndex) {
         lock.lock();
         Iterator<SimulationObject> newObjectsIterator = simulation.getAuxiliaryObjects().subList(fromIndex, toIndex).iterator();
