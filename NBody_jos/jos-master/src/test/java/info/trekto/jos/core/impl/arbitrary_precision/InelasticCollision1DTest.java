@@ -1,6 +1,9 @@
 package info.trekto.jos.core.impl.arbitrary_precision;
 
+import info.trekto.jos.core.ForceCalculator;
+import info.trekto.jos.core.Simulation;
 import info.trekto.jos.core.SimulationLogic;
+import info.trekto.jos.core.exceptions.SimulationException;
 import info.trekto.jos.core.impl.SimulationProperties;
 import info.trekto.jos.core.impl.double_precision.SimulationLogicDouble;
 import info.trekto.jos.core.impl.single_precision.SimulationLogicFloat;
@@ -13,6 +16,8 @@ import info.trekto.jos.core.numbers.Number;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.util.List;
 
 import static info.trekto.jos.core.impl.arbitrary_precision.ElasticCollision1DTest.areEqual;
 import static info.trekto.jos.core.numbers.NumberFactory.NumberType.ARBITRARY_PRECISION;
@@ -54,7 +59,62 @@ public class InelasticCollision1DTest {
     @DataProvider(name = "logic_implementations")
     public static Object[][] logicImplementations() {
         return new Object[][]{
-                {new SimulationLogicAP(new SimulationAP(properties)), PRECISION - 2},
+                {new SimulationLogicAP(new SimulationAP(properties, new Simulation() {
+                    @Override
+                    public void startSimulation() throws SimulationException {
+
+                    }
+
+                    @Override
+                    public List<SimulationObject> getObjects() {
+                        return null;
+                    }
+
+                    @Override
+                    public List<SimulationObject> getAuxiliaryObjects() {
+                        return null;
+                    }
+
+                    @Override
+                    public long getCurrentIterationNumber() {
+                        return 0;
+                    }
+
+                    @Override
+                    public ForceCalculator getForceCalculator() {
+                        return null;
+                    }
+
+                    @Override
+                    public void playSimulation(String absolutePath) {
+
+                    }
+
+                    @Override
+                    public SimulationProperties getProperties() {
+                        return null;
+                    }
+
+                    @Override
+                    public void setProperties(SimulationProperties properties) {
+
+                    }
+
+                    @Override
+                    public Number calculateDistance(ImmutableSimulationObject object, ImmutableSimulationObject object1) {
+                        return null;
+                    }
+
+                    @Override
+                    public boolean isCollisionExists() {
+                        return false;
+                    }
+
+                    @Override
+                    public void upCollisionExists() {
+
+                    }
+                })), PRECISION - 2},
                 {new SimulationLogicDouble(2, 1, 0, 0, false,
                                            properties.getCoefficientOfRestitution().doubleValue()),
                         DOUBLE_PRECISION - 1},

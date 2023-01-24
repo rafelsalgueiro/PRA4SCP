@@ -6,6 +6,7 @@ import info.trekto.jos.core.impl.SimulationProperties;
 import info.trekto.jos.core.impl.arbitrary_precision.SimulationAP;
 import info.trekto.jos.core.impl.double_precision.SimulationDouble;
 import info.trekto.jos.core.impl.single_precision.SimulationFloat;
+import info.trekto.jos.core.model.ImmutableSimulationObject;
 import info.trekto.jos.core.model.SimulationObject;
 import info.trekto.jos.core.model.impl.SimulationObjectImpl;
 import info.trekto.jos.core.numbers.New;
@@ -33,6 +34,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.Date;
+import java.util.List;
 import java.util.Properties;
 
 import static com.aparapi.Kernel.EXECUTION_MODE.GPU;
@@ -153,12 +155,177 @@ public enum Controller {
                 || (numberType == DOUBLE && !gpuDoubleAvailable)
                 || (numberType == FLOAT && !gpuFloatAvailable)
                 || (executionMode == AUTO && n <= cpuThreshold)) {
-            return new SimulationAP(properties);
+            return new SimulationAP(properties, new Simulation() {
+                @Override
+                public void startSimulation() throws SimulationException {
+
+                }
+
+                @Override
+                public List<SimulationObject> getObjects() {
+                    return null;
+                }
+
+                @Override
+                public List<SimulationObject> getAuxiliaryObjects() {
+                    return null;
+                }
+
+                @Override
+                public long getCurrentIterationNumber() {
+                    return 0;
+                }
+
+                @Override
+                public ForceCalculator getForceCalculator() {
+                    return null;
+                }
+
+                @Override
+                public void playSimulation(String absolutePath) {
+
+                }
+
+                @Override
+                public SimulationProperties getProperties() {
+                    return null;
+                }
+
+                @Override
+                public void setProperties(SimulationProperties properties) {
+
+                }
+
+                @Override
+                public Number calculateDistance(ImmutableSimulationObject object, ImmutableSimulationObject object1) {
+                    return null;
+                }
+
+                @Override
+                public boolean isCollisionExists() {
+                    return false;
+                }
+
+                @Override
+                public void upCollisionExists() {
+
+                }
+            });
         } else {
             if (numberType == DOUBLE) {
-                return new SimulationDouble(properties, executionMode == ExecutionMode.GPU ? null : new SimulationAP(properties));
+                return new SimulationDouble(properties, executionMode == ExecutionMode.GPU ? null : new SimulationAP(properties, new Simulation() {
+                    @Override
+                    public void startSimulation() throws SimulationException {
+
+                    }
+
+                    @Override
+                    public List<SimulationObject> getObjects() {
+                        return null;
+                    }
+
+                    @Override
+                    public List<SimulationObject> getAuxiliaryObjects() {
+                        return null;
+                    }
+
+                    @Override
+                    public long getCurrentIterationNumber() {
+                        return 0;
+                    }
+
+                    @Override
+                    public ForceCalculator getForceCalculator() {
+                        return null;
+                    }
+
+                    @Override
+                    public void playSimulation(String absolutePath) {
+
+                    }
+
+                    @Override
+                    public SimulationProperties getProperties() {
+                        return null;
+                    }
+
+                    @Override
+                    public void setProperties(SimulationProperties properties) {
+
+                    }
+
+                    @Override
+                    public Number calculateDistance(ImmutableSimulationObject object, ImmutableSimulationObject object1) {
+                        return null;
+                    }
+
+                    @Override
+                    public boolean isCollisionExists() {
+                        return false;
+                    }
+
+                    @Override
+                    public void upCollisionExists() {
+
+                    }
+                }));
             } else {
-                return new SimulationFloat(properties, executionMode == ExecutionMode.GPU ? null : new SimulationAP(properties));
+                return new SimulationFloat(properties, executionMode == ExecutionMode.GPU ? null : new SimulationAP(properties, new Simulation() {
+                    @Override
+                    public void startSimulation() throws SimulationException {
+
+                    }
+
+                    @Override
+                    public List<SimulationObject> getObjects() {
+                        return null;
+                    }
+
+                    @Override
+                    public List<SimulationObject> getAuxiliaryObjects() {
+                        return null;
+                    }
+
+                    @Override
+                    public long getCurrentIterationNumber() {
+                        return 0;
+                    }
+
+                    @Override
+                    public ForceCalculator getForceCalculator() {
+                        return null;
+                    }
+
+                    @Override
+                    public void playSimulation(String absolutePath) {
+
+                    }
+
+                    @Override
+                    public SimulationProperties getProperties() {
+                        return null;
+                    }
+
+                    @Override
+                    public void setProperties(SimulationProperties properties) {
+
+                    }
+
+                    @Override
+                    public Number calculateDistance(ImmutableSimulationObject object, ImmutableSimulationObject object1) {
+                        return null;
+                    }
+
+                    @Override
+                    public boolean isCollisionExists() {
+                        return false;
+                    }
+
+                    @Override
+                    public void upCollisionExists() {
+
+                    }
+                }));
             }
         }
     }

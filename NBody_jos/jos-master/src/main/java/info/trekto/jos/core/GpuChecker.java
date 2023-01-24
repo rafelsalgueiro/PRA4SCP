@@ -10,7 +10,10 @@ import info.trekto.jos.core.impl.SimulationProperties;
 import info.trekto.jos.core.impl.arbitrary_precision.SimulationAP;
 import info.trekto.jos.core.impl.double_precision.SimulationDouble;
 import info.trekto.jos.core.impl.single_precision.SimulationFloat;
+import info.trekto.jos.core.model.ImmutableSimulationObject;
+import info.trekto.jos.core.model.SimulationObject;
 import info.trekto.jos.core.numbers.New;
+import info.trekto.jos.core.numbers.Number;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +24,7 @@ import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
@@ -175,7 +179,62 @@ public class GpuChecker {
                 numberOfIterations = 25;
             }
             info(logger, "Range: " + bottom + " - " + top + " Objects: " + numberOfObjects + " Iterations: " + numberOfIterations);
-            double cpuTime = measureIteration(new SimulationAP(testProperties), numberOfIterations);
+            double cpuTime = measureIteration(new SimulationAP(testProperties, new Simulation() {
+                @Override
+                public void startSimulation() throws SimulationException {
+
+                }
+
+                @Override
+                public List<SimulationObject> getObjects() {
+                    return null;
+                }
+
+                @Override
+                public List<SimulationObject> getAuxiliaryObjects() {
+                    return null;
+                }
+
+                @Override
+                public long getCurrentIterationNumber() {
+                    return 0;
+                }
+
+                @Override
+                public ForceCalculator getForceCalculator() {
+                    return null;
+                }
+
+                @Override
+                public void playSimulation(String absolutePath) {
+
+                }
+
+                @Override
+                public SimulationProperties getProperties() {
+                    return null;
+                }
+
+                @Override
+                public void setProperties(SimulationProperties properties) {
+
+                }
+
+                @Override
+                public Number calculateDistance(ImmutableSimulationObject object, ImmutableSimulationObject object1) {
+                    return null;
+                }
+
+                @Override
+                public boolean isCollisionExists() {
+                    return false;
+                }
+
+                @Override
+                public void upCollisionExists() {
+
+                }
+            }), numberOfIterations);
             if (C.isHasToStopCpuGpuMeasuring()) {
                 return (top + bottom) / 2;
             }

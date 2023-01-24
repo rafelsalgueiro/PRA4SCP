@@ -1,6 +1,7 @@
 package info.trekto.jos.core.impl.arbitrary_precision;
 
 import info.trekto.jos.core.ForceCalculator;
+
 import info.trekto.jos.core.Simulation;
 import info.trekto.jos.core.SimulationLogic;
 import info.trekto.jos.core.exceptions.SimulationException;
@@ -42,6 +43,7 @@ public class SimulationAP implements Simulation {
 
     private final SimulationLogicAP simulationLogic;
     protected SimulationProperties properties;
+    protected Simulation simulation;
     private ForceCalculator forceCalculator;
     protected long iterationCounter;
 
@@ -71,23 +73,17 @@ public class SimulationAP implements Simulation {
                 while (true) {
                     semaforoCV.acquire();
                     lock.lock();
-                    int numberOfObjects = 0;
-                    numberOfObjects = properties.getNumberOfObjects();
+                    int numberOfObjects = simulation.getObjects().size();
                     int numberOfThreads = properties.getNumberOfThreads();
                     int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
-                    int from;
-                    int to;
-                    from = initialIndex * numberOfObjectsPerThread;
-                    to = finalIndex * numberOfObjectsPerThread;
-                    if (idThread != properties.getNumberOfThreads() && to > 0) {
-                        to = to - 1;
+                    initialIndex = idThread * numberOfObjectsPerThread;
+                    finalIndex = initialIndex + numberOfObjectsPerThread;
+                    if (idThread + 1 != properties.getNumberOfThreads() && finalIndex > 0) {
+                        finalIndex = finalIndex - 1;
                     }
 
-                    initialIndex = from;
-                    finalIndex = to;
-
                     lock.unlock();
-                    printStatics (idThread);
+                    //printStatics (idThread);
                     simulationLogic.calculateNewValues(initialIndex, finalIndex);
                     if (properties.getNumberOfIterations() == iterationCounter) {
                         for (Thread thread : threads) {
@@ -106,24 +102,37 @@ public class SimulationAP implements Simulation {
     public void printStatics(int idThread) {
         logger.info("Thread " + idThread + " is running");
     }
+
     public void calculatePropertiesThread() {
-        int from = 0;
-        int to = 0;
+        int from;
+        int to;
         int idThread = 0;
+        int numberOfObjects = properties.getNumberOfObjects();
+        int numberOfThreads = properties.getNumberOfThreads();
+        int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
         for (int i = 0; i < properties.getNumberOfThreads(); i++) {
-            idThread++;
+
+            from = i * numberOfObjectsPerThread;
+            to = from + numberOfObjectsPerThread;
+            if (idThread + 1 != properties.getNumberOfThreads() && to > 0) {
+                to = to - 1;
+            }
+            if (i == numberOfThreads) {     //ultima particula
+                to = numberOfObjects + 1;
+            }
             MyThreadCNW thread = new MyThreadCNW(from, to, idThread);     // create thread
             threads.add(thread);
+            idThread++;
         }
     }
 
 
-    public SimulationAP(SimulationProperties properties) {
+    public SimulationAP(SimulationProperties properties, Simulation simulation) {
         simulationLogic = new SimulationLogicAP(this);
         this.properties = properties;
+        this.simulation = simulation;
         calculatePropertiesThread();
         for (Thread thread : threads) {
-
             thread.start();
         }
     }
