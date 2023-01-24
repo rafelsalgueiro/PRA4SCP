@@ -72,32 +72,14 @@ public class SimulationAP implements Simulation {
             try {
                 while (true) {
                     semaforoCV.acquire();
-                    lock.lock();
-                    int numberOfObjects = simulation.getObjects().size();
-                    int numberOfThreads = properties.getNumberOfThreads();
-                    int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
-                    initialIndex = idThread * numberOfObjectsPerThread;
-                    finalIndex = initialIndex + numberOfObjectsPerThread;
-                    if (idThread + 1 != properties.getNumberOfThreads() && finalIndex > 0) {
-                        finalIndex = finalIndex - 1;
-                    }
-
-                    lock.unlock();
-                    //printStatics (idThread);
-                    simulationLogic.calculateNewValues(initialIndex, finalIndex);
-                    if (properties.getNumberOfIterations() == iterationCounter) {
-                        for (Thread thread : threads) {
-                            thread.join();
-                        }
-                    }
+                    simulationLogic.threadFunction(idThread, initialIndex, finalIndex);
                 }
-            } catch (
-                    Exception e) {
-                e.printStackTrace();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-        }
 
-    }// create threads
+        }// create threads
+    }
 
     public void printStatics(int idThread) {
         logger.info("Thread " + idThread + " is running");

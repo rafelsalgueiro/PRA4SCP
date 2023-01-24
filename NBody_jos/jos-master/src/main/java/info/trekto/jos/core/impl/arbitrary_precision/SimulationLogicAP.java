@@ -35,6 +35,7 @@ public class SimulationLogicAP implements SimulationLogic {
         int to = numberOfObjectsPerThread;
         calculateNewValues(from, to);
     }
+
     public void calculateNewValues(int fromIndex, int toIndex) {
 
         lock.lock();
@@ -98,6 +99,25 @@ public class SimulationLogicAP implements SimulationLogic {
             }
         }
 
+    }
+
+    public void threadFunction(int idThread, int initialIndex, int finalIndex) {
+        lock.lock();
+        int numberOfObjects = simulation.getObjects().size();
+        int numberOfThreads = simulation.getProperties().getNumberOfThreads();
+        int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
+        initialIndex = idThread * numberOfObjectsPerThread;
+        finalIndex = initialIndex + numberOfObjectsPerThread;
+        if (idThread + 1 != numberOfThreads && finalIndex > 0) {
+            finalIndex = finalIndex - 1;
+        }
+
+        lock.unlock();
+        //printStatics (idThread);
+        calculateNewValues(initialIndex, finalIndex);
+        if (simulation.getProperties().getNumberOfIterations() == simulation.getCurrentIterationNumber()) {
+            return;
+        }
     }
 
 
