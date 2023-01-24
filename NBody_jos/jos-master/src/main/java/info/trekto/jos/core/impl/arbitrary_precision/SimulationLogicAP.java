@@ -36,6 +36,7 @@ public class SimulationLogicAP implements SimulationLogic {
         calculateNewValues(from, to);
     }
     public void calculateNewValues(int fromIndex, int toIndex) {
+
         lock.lock();
         Iterator<SimulationObject> newObjectsIterator = simulation.getAuxiliaryObjects().subList(fromIndex, toIndex).iterator();
         lock.unlock();
