@@ -10,7 +10,9 @@ import info.trekto.jos.core.numbers.Number;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.Lock;
 
 import static info.trekto.jos.core.Controller.C;
 import static info.trekto.jos.core.numbers.NumberFactoryProxy.*;
@@ -21,13 +23,15 @@ import static info.trekto.jos.core.numbers.NumberFactoryProxy.*;
  */
 public class SimulationLogicAP implements SimulationLogic {
     private final Simulation simulation;
-    private final ReentrantLock lock = new ReentrantLock();
+    private final Lock lock = new ReentrantLock();
+    public Semaphore semaforoCV = new Semaphore(0);
+    public boolean canGoIn = false;
 
     public SimulationLogicAP(Simulation simulation) {
         this.simulation = simulation;
     }
 
-    public void calculateAllNewValues() {
+    public void calculateAllNewValues() throws InterruptedException {
         int numberOfObjects = simulation.getObjects().size();
         int numberOfThreads = simulation.getProperties().getNumberOfThreads();
         int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
@@ -36,9 +40,7 @@ public class SimulationLogicAP implements SimulationLogic {
         calculateNewValues(from, to);
     }
 
-    public void calculateNewValues(int fromIndex, int toIndex) {
-
-        lock.lock();
+    public synchronized void calculateNewValues(int fromIndex, int toIndex) {
         Iterator<SimulationObject> newObjectsIterator = simulation.getAuxiliaryObjects().subList(fromIndex, toIndex).iterator();
         /* We should not change oldObject. We can change only newObject. */
         for (ImmutableSimulationObject oldObject : simulation.getObjects().subList(fromIndex, toIndex)) {
@@ -61,9 +63,7 @@ public class SimulationLogicAP implements SimulationLogic {
                 Number distance = calculateDistance(oldObject, tempObject);
                 TripleNumber force = simulation.getForceCalculator().calculateForceAsVector(oldObject, tempObject, distance);
                 /* Add to current acceleration */
-                synchronized (this) {
-                    acceleration = calculateAcceleration(oldObject, acceleration, force);
-                }
+                acceleration = calculateAcceleration(oldObject, acceleration, force);
             }
 
             /* Move objects */
@@ -82,29 +82,36 @@ public class SimulationLogicAP implements SimulationLogic {
             newObject.setAcceleration(acceleration);
             /* Bounce from screen borders */
             /* Only change the direction of the velocity */
-            synchronized (this) {
-                if (simulation.getProperties().isBounceFromScreenBorders()) {
-                    bounceFromScreenBorders(newObject);
-                }
+            if (simulation.getProperties().isBounceFromScreenBorders()) {
+                bounceFromScreenBorders(newObject);
             }
         }
-        lock.unlock();
+
     }
 
-    public void threadFunction(int idThread, int initialIndex, int finalIndex) {
-        lock.lock();
-        int numberOfObjects = simulation.getObjects().size();
-        int numberOfThreads = simulation.getProperties().getNumberOfThreads();
-        int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
-        initialIndex = idThread * numberOfObjectsPerThread;
-        finalIndex = initialIndex + numberOfObjectsPerThread;
-        if (idThread + 1 != numberOfThreads && finalIndex > 0) {
-            finalIndex = finalIndex - 1;
-        }
 
-        lock.unlock();
-        //printStatics (idThread);
-        calculateNewValues(initialIndex, finalIndex);
+    public void threadFunction(int idThread, int initialIndex, int finalIndex) throws InterruptedException {
+        while (true) {
+            int numberOfObjects = simulation.getObjects().size();
+            int numberOfThreads = simulation.getProperties().getNumberOfThreads();
+            int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
+            initialIndex = idThread * numberOfObjectsPerThread;
+            finalIndex = initialIndex + numberOfObjectsPerThread;
+            if (idThread + 1 != numberOfThreads && finalIndex > 0) {
+                finalIndex = finalIndex - 1;
+            }
+            //printStatics (idThread);
+            lock.lock();
+            try {
+                calculateNewValues(initialIndex, finalIndex);
+            } finally {
+                lock.unlock();
+            }
+
+            if (simulation.getCurrentIterationNumber() == simulation.getProperties().getNumberOfIterations()) {
+                return;
+            }
+        }
     }
 
 

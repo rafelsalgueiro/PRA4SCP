@@ -53,8 +53,7 @@ public class SimulationAP implements Simulation {
     private volatile boolean collisionExists;
 
     public ReentrantLock lock = new ReentrantLock();
-    public Semaphore semaforoCV = new Semaphore(0);
-    public Semaphore semaforo2 = new Semaphore(1);
+
     public List<Thread> threads = new ArrayList<>();
 
     public class MyThreadCNW extends Thread {
@@ -71,19 +70,11 @@ public class SimulationAP implements Simulation {
         @Override
         public void run() {
             try {
-                while (true) {
-                    semaforoCV.acquire();
-                    lock.lock();
-                    simulationLogic.threadFunction(idThread, initialIndex, finalIndex);
-                    lock.unlock();
-                    semaforo2.release();
-                    if (iterationCounter == properties.getNumberOfIterations()) {
-                        return;
-                    }
-                }
+                simulationLogic.threadFunction(idThread, initialIndex, finalIndex);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
+
 
         }// create threads
     }
@@ -100,14 +91,10 @@ public class SimulationAP implements Simulation {
         int numberOfThreads = properties.getNumberOfThreads();
         int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
         for (int i = 0; i < properties.getNumberOfThreads(); i++) {
-
             from = i * numberOfObjectsPerThread;
             to = from + numberOfObjectsPerThread;
             if (idThread + 1 != properties.getNumberOfThreads() && to > 0) {
                 to = to - 1;
-            }
-            if (i == numberOfThreads) {     //ultima particula
-                to = numberOfObjects + 1;
             }
             MyThreadCNW thread = new MyThreadCNW(from, to, idThread);     // create thread
             threads.add(thread);
@@ -165,9 +152,7 @@ public class SimulationAP implements Simulation {
         }
         */
         //new SimulationRecursiveAction(0, objects.size(), this).compute();
-        semaforo2.acquire();
         simulationLogic.calculateAllNewValues();
-        semaforoCV.release(properties.getNumberOfThreads());
         /* Collision */
         CollisionCheckAP collisionCheck = new CollisionCheckAP(0, auxiliaryObjects.size(), this);
         collisionExists = false;
