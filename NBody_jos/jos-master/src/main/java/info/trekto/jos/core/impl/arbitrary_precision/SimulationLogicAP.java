@@ -25,6 +25,7 @@ public class SimulationLogicAP implements SimulationLogic {
     private final Simulation simulation;
     private final Lock lock = new ReentrantLock();
     public Semaphore semaforoCV = new Semaphore(0);
+    public Semaphore waitingThreads = new Semaphore(0);
     public boolean canGoIn = false;
 
     public SimulationLogicAP(Simulation simulation) {
@@ -32,6 +33,7 @@ public class SimulationLogicAP implements SimulationLogic {
     }
 
     public void calculateAllNewValues() throws InterruptedException {
+
         int numberOfObjects = simulation.getObjects().size();
         int numberOfThreads = simulation.getProperties().getNumberOfThreads();
         int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
@@ -92,25 +94,25 @@ public class SimulationLogicAP implements SimulationLogic {
 
     public void threadFunction(int idThread, int initialIndex, int finalIndex) throws InterruptedException {
         while (true) {
+            semaforoCV.acquire();
+            lock.lock();
             int numberOfObjects = simulation.getObjects().size();
             int numberOfThreads = simulation.getProperties().getNumberOfThreads();
             int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
             initialIndex = idThread * numberOfObjectsPerThread;
             finalIndex = initialIndex + numberOfObjectsPerThread;
-            if (idThread + 1 != numberOfThreads && finalIndex > 0) {
+            if (idThread + 1 < numberOfThreads && finalIndex > 0) {
                 finalIndex = finalIndex - 1;
             }
             //printStatics (idThread);
-            lock.lock();
-            try {
-                calculateNewValues(initialIndex, finalIndex);
-            } finally {
-                lock.unlock();
-            }
-
+            calculateNewValues(initialIndex, finalIndex);
+            waitingThreads.release();
             if (simulation.getCurrentIterationNumber() == simulation.getProperties().getNumberOfIterations()) {
                 return;
             }
+
+            lock.unlock();
+
         }
     }
 

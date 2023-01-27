@@ -70,7 +70,9 @@ public class SimulationAP implements Simulation {
         @Override
         public void run() {
             try {
+                lock.lock();
                 simulationLogic.threadFunction(idThread, initialIndex, finalIndex);
+                lock.unlock();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -152,7 +154,11 @@ public class SimulationAP implements Simulation {
         }
         */
         //new SimulationRecursiveAction(0, objects.size(), this).compute();
-        simulationLogic.calculateAllNewValues();
+        //simulationLogic.calculateAllNewValues();
+        simulationLogic.semaforoCV.release(properties.getNumberOfThreads());
+
+        simulationLogic.waitingThreads.acquire(properties.getNumberOfThreads());
+
         /* Collision */
         CollisionCheckAP collisionCheck = new CollisionCheckAP(0, auxiliaryObjects.size(), this);
         collisionExists = false;
