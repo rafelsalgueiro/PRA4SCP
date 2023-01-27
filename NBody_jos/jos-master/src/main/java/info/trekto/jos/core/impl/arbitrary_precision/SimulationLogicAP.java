@@ -94,8 +94,8 @@ public class SimulationLogicAP implements SimulationLogic {
 
     public void threadFunction(int idThread, int initialIndex, int finalIndex) throws InterruptedException {
         while (true) {
+            System.out.println("Thread " + idThread + " is running");
             semaforoCV.acquire();
-            lock.lock();
             int numberOfObjects = simulation.getObjects().size();
             int numberOfThreads = simulation.getProperties().getNumberOfThreads();
             int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
@@ -110,8 +110,6 @@ public class SimulationLogicAP implements SimulationLogic {
             if (simulation.getCurrentIterationNumber() == simulation.getProperties().getNumberOfIterations()) {
                 return;
             }
-
-            lock.unlock();
 
         }
     }

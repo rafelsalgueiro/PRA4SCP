@@ -150,19 +150,19 @@ public enum Controller {
         NumberFactory.NumberType numberType = properties.getNumberType();
         int n = properties.getNumberOfObjects();
 
-        if (numberType == ARBITRARY_PRECISION
-                || executionMode == CPU
-                || (numberType == DOUBLE && !gpuDoubleAvailable)
-                || (numberType == FLOAT && !gpuFloatAvailable)
-                || (executionMode == AUTO && n <= cpuThreshold)) {
+       // if (numberType == ARBITRARY_PRECISION
+         //       || executionMode == CPU
+         //       || (numberType == DOUBLE && !gpuDoubleAvailable)
+          //      || (numberType == FLOAT && !gpuFloatAvailable)
+           //     || (executionMode == AUTO && n <= cpuThreshold)) {
             return new SimulationAP(properties);
-        } else {
-            if (numberType == DOUBLE) {
-                return new SimulationDouble(properties, executionMode == ExecutionMode.GPU ? null : new SimulationAP(properties));
-            } else {
-                return new SimulationFloat(properties, executionMode == ExecutionMode.GPU ? null : new SimulationAP(properties));
-            }
-        }
+       // } else {
+//            if (numberType == DOUBLE) {
+//                return new SimulationDouble(properties, executionMode == ExecutionMode.GPU ? null : new SimulationAP(properties));
+//            } else {
+//                return new SimulationFloat(properties, executionMode == ExecutionMode.GPU ? null : new SimulationAP(properties));
+//            }
+       // }
     }
 
     public SimulationProperties loadProperties(String inputFile) {
