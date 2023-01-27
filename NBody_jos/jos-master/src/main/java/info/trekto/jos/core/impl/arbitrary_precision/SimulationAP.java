@@ -70,9 +70,7 @@ public class SimulationAP implements Simulation {
         @Override
         public void run() {
             try {
-                lock.lock();
                 simulationLogic.threadFunction(idThread, initialIndex, finalIndex);
-                lock.unlock();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -154,10 +152,9 @@ public class SimulationAP implements Simulation {
         }
         */
         //new SimulationRecursiveAction(0, objects.size(), this).compute();
-        //simulationLogic.calculateAllNewValues();
-        simulationLogic.semaforoCV.release(properties.getNumberOfThreads());
+        simulationLogic.semaforoCV.release(properties.getNumberOfThreads());                //inicio calculo de particulas por parte de los threads
 
-        simulationLogic.waitingThreads.acquire(properties.getNumberOfThreads());
+        simulationLogic.waitingThreads.acquire(properties.getNumberOfThreads());            //espera a que todos los threads terminen de calcular
 
         /* Collision */
         CollisionCheckAP collisionCheck = new CollisionCheckAP(0, auxiliaryObjects.size(), this);

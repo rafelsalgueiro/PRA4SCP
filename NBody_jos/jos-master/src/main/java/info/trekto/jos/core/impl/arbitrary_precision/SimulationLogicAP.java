@@ -42,7 +42,7 @@ public class SimulationLogicAP implements SimulationLogic {
         calculateNewValues(from, to);
     }
 
-    public synchronized void calculateNewValues(int fromIndex, int toIndex) {
+    public void calculateNewValues(int fromIndex, int toIndex) {
         Iterator<SimulationObject> newObjectsIterator = simulation.getAuxiliaryObjects().subList(fromIndex, toIndex).iterator();
         /* We should not change oldObject. We can change only newObject. */
         for (ImmutableSimulationObject oldObject : simulation.getObjects().subList(fromIndex, toIndex)) {
@@ -94,18 +94,24 @@ public class SimulationLogicAP implements SimulationLogic {
 
     public void threadFunction(int idThread, int initialIndex, int finalIndex) throws InterruptedException {
         while (true) {
-            System.out.println("Thread " + idThread + " is running");
             semaforoCV.acquire();
-            int numberOfObjects = simulation.getObjects().size();
-            int numberOfThreads = simulation.getProperties().getNumberOfThreads();
-            int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
-            initialIndex = idThread * numberOfObjectsPerThread;
-            finalIndex = initialIndex + numberOfObjectsPerThread;
-            if (idThread + 1 < numberOfThreads && finalIndex > 0) {
-                finalIndex = finalIndex - 1;
+            synchronized (simulation) {
+                int numberOfObjects = simulation.getObjects().size();
+                int numberOfThreads = simulation.getProperties().getNumberOfThreads();
+                int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
+                initialIndex = idThread * numberOfObjectsPerThread;
+                finalIndex = initialIndex + numberOfObjectsPerThread;
+                if (idThread + 1 < numberOfThreads && finalIndex > 0) {
+                    finalIndex = finalIndex - 1;
+                }
             }
             //printStatics (idThread);
-            calculateNewValues(initialIndex, finalIndex);
+            lock.lock();
+            try {
+                calculateNewValues(initialIndex, finalIndex);
+            } finally {
+                lock.unlock();
+            }
             waitingThreads.release();
             if (simulation.getCurrentIterationNumber() == simulation.getProperties().getNumberOfIterations()) {
                 return;
@@ -205,7 +211,8 @@ public class SimulationLogicAP implements SimulationLogic {
     /**
      * We calculate for sphere, not for circle, so in 2D volume may not look real.
      */
-    public Number calculateRadiusBasedOnNewVolumeAndDensity(ImmutableSimulationObject smaller, ImmutableSimulationObject bigger) {
+    public Number calculateRadiusBasedOnNewVolumeAndDensity(ImmutableSimulationObject
+                                                                    smaller, ImmutableSimulationObject bigger) {
         // density = mass / volume
         // calculate volume of smaller and add it to volume of bigger
         // calculate new radius of bigger based on new volume
@@ -236,7 +243,8 @@ public class SimulationLogicAP implements SimulationLogic {
         return new TripleNumber(x, y, z);
     }
 
-    private static TripleNumber calculateVelocityOnMerging(ImmutableSimulationObject smaller, ImmutableSimulationObject bigger) {
+    private static TripleNumber calculateVelocityOnMerging(ImmutableSimulationObject
+                                                                   smaller, ImmutableSimulationObject bigger) {
         TripleNumber totalImpulse = new TripleNumber(
                 smaller.getVelocity().getX().multiply(smaller.getMass()).add(bigger.getVelocity().getX().multiply(bigger.getMass())),
                 smaller.getVelocity().getY().multiply(smaller.getMass()).add(bigger.getVelocity().getY().multiply(bigger.getMass())),
@@ -304,7 +312,8 @@ public class SimulationLogicAP implements SimulationLogic {
         return IGNORED.cbrt(volume.divide(RATIO_FOUR_THREE.multiply(PI)));
     }
 
-    public TripleNumber calculateAcceleration(ImmutableSimulationObject object, TripleNumber acceleration, TripleNumber force) {
+    public TripleNumber calculateAcceleration(ImmutableSimulationObject object, TripleNumber
+            acceleration, TripleNumber force) {
         // ax = Fx / m
         Number newAccelerationX = acceleration.getX().add(force.getX().divide(object.getMass()));
         Number newAccelerationY = acceleration.getY().add(force.getY().divide(object.getMass()));
@@ -351,7 +360,8 @@ public class SimulationLogicAP implements SimulationLogic {
         );
     }
 
-    private Number dotProduct2D(Number ax, Number ay, Number bx, Number by, Number cx, Number cy, Number dx, Number dy) {
+    private Number dotProduct2D(Number ax, Number ay, Number bx, Number by, Number cx, Number cy, Number dx, Number
+            dy) {
         // <a - b, c - d> = (ax - bx) * (cx - dx) + (ay - by) * (cy - dy)
         return (ax.subtract(bx)).multiply(cx.subtract(dx)).add(ay.subtract(by).multiply(cy.subtract(dy)));
     }
