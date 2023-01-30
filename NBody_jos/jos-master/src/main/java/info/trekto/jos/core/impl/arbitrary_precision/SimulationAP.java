@@ -52,8 +52,6 @@ public class SimulationAP implements Simulation {
 
     private volatile boolean collisionExists;
 
-    public ReentrantLock lock = new ReentrantLock();
-
     public List<Thread> threads = new ArrayList<>();
 
     public class MyThreadCNW extends Thread {

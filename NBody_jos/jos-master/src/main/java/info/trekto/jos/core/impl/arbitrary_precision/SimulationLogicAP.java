@@ -26,21 +26,11 @@ public class SimulationLogicAP implements SimulationLogic {
     private final Lock lock = new ReentrantLock();
     public Semaphore semaforoCV = new Semaphore(0);
     public Semaphore waitingThreads = new Semaphore(0);
-    public boolean canGoIn = false;
 
     public SimulationLogicAP(Simulation simulation) {
         this.simulation = simulation;
     }
 
-    public void calculateAllNewValues() throws InterruptedException {
-
-        int numberOfObjects = simulation.getObjects().size();
-        int numberOfThreads = simulation.getProperties().getNumberOfThreads();
-        int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
-        int from = 0;
-        int to = numberOfObjectsPerThread;
-        calculateNewValues(from, to);
-    }
 
     public void calculateNewValues(int fromIndex, int toIndex) {
         Iterator<SimulationObject> newObjectsIterator = simulation.getAuxiliaryObjects().subList(fromIndex, toIndex).iterator();
