@@ -11,6 +11,7 @@ import java.awt.*;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.Lock;
 
@@ -95,7 +96,7 @@ public class SimulationLogicAP implements SimulationLogic {
                     finalIndex = finalIndex - 1;
                 }
             }
-            //printStatics (idThread);
+            printStatics (idThread);
             lock.lock();
             try {
                 calculateNewValues(initialIndex, finalIndex);
@@ -108,6 +109,9 @@ public class SimulationLogicAP implements SimulationLogic {
             }
 
         }
+    }
+
+    private void printStatics(int idThread) {
     }
 
 

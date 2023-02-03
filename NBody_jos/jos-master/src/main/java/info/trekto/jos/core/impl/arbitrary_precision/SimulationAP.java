@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static info.trekto.jos.core.Controller.C;
 // import static info.trekto.jos.core.impl.arbitrary_precision.SimulationRecursiveAction.threshold;
@@ -72,14 +70,13 @@ public class SimulationAP implements Simulation {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-
+            for (Thread thread : threads ){
+                thread.interrupt();
+            }
 
         }// create threads
     }
 
-    public void printStatics(int idThread) {
-        logger.info("Thread " + idThread + " is running");
-    }
 
     public void calculatePropertiesThread() {
         int from;
@@ -252,7 +249,6 @@ public class SimulationAP implements Simulation {
         C.setRunning(true);
         C.setHasToStop(false);
         try {
-
             for (long i = 0; properties.isInfiniteSimulation() || i < properties.getNumberOfIterations(); i++) {
                 try {
                     if (C.hasToStop()) {
@@ -302,15 +298,6 @@ public class SimulationAP implements Simulation {
             if (properties.isSaveToFile()) {
                 C.getReaderWriter().endFile();
             }
-            // Esperamos a que todos los hilos finalicen
-            for (Thread threadEnd : threads) {
-                try {
-                    threadEnd.join();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
         }
 
         info(logger, "End of simulation. Time: " + nanoToHumanReadable(endTime - startTime));
