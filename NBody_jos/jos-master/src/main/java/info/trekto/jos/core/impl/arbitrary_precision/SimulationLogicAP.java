@@ -11,7 +11,6 @@ import java.awt.*;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.Lock;
 
@@ -27,6 +26,8 @@ public class SimulationLogicAP implements SimulationLogic {
     private final Lock lock = new ReentrantLock();
     public Semaphore semaforoCV = new Semaphore(0);
     public Semaphore waitingThreads = new Semaphore(0);
+    public int M = 25;
+
 
     public SimulationLogicAP(Simulation simulation) {
         this.simulation = simulation;
@@ -85,8 +86,8 @@ public class SimulationLogicAP implements SimulationLogic {
 
     public void threadFunction(int idThread, int initialIndex, int finalIndex) throws InterruptedException {
         while (true) {
-            semaforoCV.acquire();
-            synchronized (simulation) {
+            semaforoCV.acquire();                                                   //Wait for the signal to start
+            synchronized (simulation) {                                             //Calculating the initial and final index for each thread
                 int numberOfObjects = simulation.getObjects().size();
                 int numberOfThreads = simulation.getProperties().getNumberOfThreads();
                 int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
@@ -96,22 +97,26 @@ public class SimulationLogicAP implements SimulationLogic {
                     finalIndex = finalIndex - 1;
                 }
             }
-            printStatics (idThread);
+
             lock.lock();
             try {
-                calculateNewValues(initialIndex, finalIndex);
+                calculateNewValues(initialIndex, finalIndex);               //Calculate new values
             } finally {
                 lock.unlock();
             }
-            waitingThreads.release();
-            if (simulation.getCurrentIterationNumber() == simulation.getProperties().getNumberOfIterations()) {
+            waitingThreads.release();                                       //Signal that the thread has finished this iteration
+
+            if (simulation.getCurrentIterationNumber() % M == 0) {
+                printStatics(idThread);
+            }
+            if (simulation.getCurrentIterationNumber() == simulation.getProperties().getNumberOfIterations()) {     //The simulation has finished
                 return;
             }
-
         }
     }
 
     private void printStatics(int idThread) {
+
     }
 
 

@@ -3,7 +3,6 @@ package info.trekto.jos.core.impl.arbitrary_precision;
 import info.trekto.jos.core.ForceCalculator;
 
 import info.trekto.jos.core.Simulation;
-import info.trekto.jos.core.SimulationLogic;
 import info.trekto.jos.core.exceptions.SimulationException;
 import info.trekto.jos.core.impl.Iteration;
 import info.trekto.jos.core.impl.SimulationProperties;
@@ -52,6 +51,8 @@ public class SimulationAP implements Simulation {
 
     public List<Thread> threads = new ArrayList<>();
 
+
+
     public class MyThreadCNW extends Thread {
         private int initialIndex;
         private int finalIndex;
@@ -70,7 +71,7 @@ public class SimulationAP implements Simulation {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            for (Thread thread : threads ){
+            for (Thread thread : threads ){                 // Finishing threads
                 thread.interrupt();
             }
 
@@ -79,18 +80,10 @@ public class SimulationAP implements Simulation {
 
 
     public void calculatePropertiesThread() {
-        int from;
-        int to;
+        int from = 0;
+        int to = 0;
         int idThread = 0;
-        int numberOfObjects = properties.getNumberOfObjects();
-        int numberOfThreads = properties.getNumberOfThreads();
-        int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
         for (int i = 0; i < properties.getNumberOfThreads(); i++) {
-            from = i * numberOfObjectsPerThread;
-            to = from + numberOfObjectsPerThread;
-            if (idThread + 1 != properties.getNumberOfThreads() && to > 0) {
-                to = to - 1;
-            }
             MyThreadCNW thread = new MyThreadCNW(from, to, idThread);     // create thread
             threads.add(thread);
             idThread++;
