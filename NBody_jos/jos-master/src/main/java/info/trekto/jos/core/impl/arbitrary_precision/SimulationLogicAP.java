@@ -24,8 +24,16 @@ import static info.trekto.jos.core.numbers.NumberFactoryProxy.*;
 public class SimulationLogicAP implements SimulationLogic {
     private final Simulation simulation;
     private final Lock lock = new ReentrantLock();
+    public List<Integer> particlesEvaluated = new LinkedList<>();
+    public List<Integer> particlesMerged = new ArrayList<>();
+    private Integer inc = 1;
     public Semaphore semaforoCV = new Semaphore(0);
     public Semaphore waitingThreads = new Semaphore(0);
+
+    public Semaphore waitFather = new Semaphore(0);
+    public Semaphore particlesSeparated = new Semaphore(0);
+
+    public int numberOfObjects;
     public int M = 25;
 
 
@@ -36,9 +44,11 @@ public class SimulationLogicAP implements SimulationLogic {
 
     public void calculateNewValues(int fromIndex, int toIndex) {
         Iterator<SimulationObject> newObjectsIterator = simulation.getAuxiliaryObjects().subList(fromIndex, toIndex).iterator();
+
         /* We should not change oldObject. We can change only newObject. */
         for (ImmutableSimulationObject oldObject : simulation.getObjects().subList(fromIndex, toIndex)) {
             SimulationObject newObject = newObjectsIterator.next();
+
             /* Speed is scalar, velocity is vector. Velocity = speed + direction. */
 
             /* Time T passed */
@@ -47,15 +57,15 @@ public class SimulationLogicAP implements SimulationLogic {
             /* For the time T, forces accelerated the objects (changed their velocities).
              * Forces are calculated having the positions of the objects at the beginning of the period,
              * and these forces are applied for time T. */
-
             TripleNumber acceleration = new TripleNumber();
-            for (ImmutableSimulationObject tempObject : simulation.getObjects().subList(fromIndex, toIndex)) {
+            for (ImmutableSimulationObject tempObject : simulation.getObjects()) {
                 if (tempObject == oldObject) {
                     continue;
                 }
                 /* Calculate force */
                 Number distance = calculateDistance(oldObject, tempObject);
                 TripleNumber force = simulation.getForceCalculator().calculateForceAsVector(oldObject, tempObject, distance);
+
                 /* Add to current acceleration */
                 acceleration = calculateAcceleration(oldObject, acceleration, force);
             }
@@ -74,40 +84,45 @@ public class SimulationLogicAP implements SimulationLogic {
 
             /* Change the acceleration */
             newObject.setAcceleration(acceleration);
+
             /* Bounce from screen borders */
             /* Only change the direction of the velocity */
             if (simulation.getProperties().isBounceFromScreenBorders()) {
                 bounceFromScreenBorders(newObject);
             }
         }
-
     }
-
 
     public void threadFunction(int idThread, int initialIndex, int finalIndex) throws InterruptedException {
         while (true) {
-            semaforoCV.acquire();                                                   //Wait for the signal to start
-            synchronized (simulation) {                                             //Calculating the initial and final index for each thread
-                int numberOfObjects = simulation.getObjects().size();
-                int numberOfThreads = simulation.getProperties().getNumberOfThreads();
-                int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
-                initialIndex = idThread * numberOfObjectsPerThread;
-                finalIndex = initialIndex + numberOfObjectsPerThread;
-                if (idThread + 1 < numberOfThreads && finalIndex > 0) {
-                    finalIndex = finalIndex - 1;
-                }
-            }
+            semaforoCV.acquire();                                                   //Wait for the signal to start this iteration
+            numberOfObjects = simulation.getObjects().size();
+            int numberOfThreads = simulation.getProperties().getNumberOfThreads();
+            int numberOfObjectsPerThread = numberOfObjects / numberOfThreads;
 
-            lock.lock();
-            try {
-                calculateNewValues(initialIndex, finalIndex);               //Calculate new values
-            } finally {
-                lock.unlock();
+            initialIndex = idThread * numberOfObjectsPerThread;                 //Calculating the initial and final index for each thread
+            finalIndex = (idThread + 1) * numberOfObjectsPerThread;
+            if (idThread+1 == simulation.getProperties().getNumberOfThreads()) {
+                finalIndex = simulation.getObjects().size();
             }
+            particlesEvaluated.set(idThread, particlesEvaluated.get(idThread) + (finalIndex - initialIndex));
+            particlesSeparated.release();
+            waitFather.acquire();
+            //Wait all the threads to calculate their particles
+            calculateNewValues(initialIndex, finalIndex);               //Calculate new values
+
+
             waitingThreads.release();                                       //Signal that the thread has finished this iteration
 
             if (simulation.getCurrentIterationNumber() % M == 0) {
-                printStatics(idThread);
+                lock.lock();
+                try {
+                    //System.out.println("Iteration: " + simulation.getCurrentIterationNumber());
+                    printStatics(idThread);
+                } finally {
+                    lock.unlock();
+                }
+
             }
             if (simulation.getCurrentIterationNumber() == simulation.getProperties().getNumberOfIterations()) {     //The simulation has finished
                 return;
@@ -116,9 +131,10 @@ public class SimulationLogicAP implements SimulationLogic {
     }
 
     private void printStatics(int idThread) {
+        System.out.println("\n----------------------Thread: " + idThread + "--------------------");
+        System.out.print("Evaluated particles: " + particlesEvaluated.get(idThread));
 
     }
-
 
     public void processCollisions(Simulation simulation) {
         boolean mergeOnCollision = simulation.getProperties().isMergeOnCollision();
@@ -163,7 +179,6 @@ public class SimulationLogicAP implements SimulationLogic {
                             bigger = newObject;
                         }
                         forRemoval.add(smaller);
-
                         /* Objects merging */
                         /* Velocity */
                         bigger.setVelocity(calculateVelocityOnMerging(smaller, bigger));

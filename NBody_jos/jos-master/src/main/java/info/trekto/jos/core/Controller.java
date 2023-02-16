@@ -6,7 +6,6 @@ import info.trekto.jos.core.impl.SimulationProperties;
 import info.trekto.jos.core.impl.arbitrary_precision.SimulationAP;
 import info.trekto.jos.core.impl.double_precision.SimulationDouble;
 import info.trekto.jos.core.impl.single_precision.SimulationFloat;
-import info.trekto.jos.core.model.ImmutableSimulationObject;
 import info.trekto.jos.core.model.SimulationObject;
 import info.trekto.jos.core.model.impl.SimulationObjectImpl;
 import info.trekto.jos.core.numbers.New;

@@ -36,4 +36,5 @@ public interface Simulation {
     boolean isCollisionExists();
     
     void upCollisionExists();
+
 }

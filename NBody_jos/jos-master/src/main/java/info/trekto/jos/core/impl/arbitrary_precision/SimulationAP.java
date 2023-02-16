@@ -83,7 +83,13 @@ public class SimulationAP implements Simulation {
         int from = 0;
         int to = 0;
         int idThread = 0;
+        simulationLogic.particlesEvaluated = new ArrayList<>(getProperties().getNumberOfThreads());
+
+        simulationLogic.particlesMerged = new ArrayList<>(getProperties().getNumberOfThreads());
+
         for (int i = 0; i < properties.getNumberOfThreads(); i++) {
+            simulationLogic.particlesMerged.add(0);
+            simulationLogic.particlesEvaluated.add(0);
             MyThreadCNW thread = new MyThreadCNW(from, to, idThread);     // create thread
             threads.add(thread);
             idThread++;
@@ -142,11 +148,16 @@ public class SimulationAP implements Simulation {
         //new SimulationRecursiveAction(0, objects.size(), this).compute();
         simulationLogic.semaforoCV.release(properties.getNumberOfThreads());                //inicio calculo de particulas por parte de los threads
 
+        simulationLogic.particlesSeparated.acquire(properties.getNumberOfThreads());
+        collisionExists = false;
+
+        simulationLogic.waitFather.release(properties.getNumberOfThreads());                //espera a que todos los threads terminen de calcular
+
         simulationLogic.waitingThreads.acquire(properties.getNumberOfThreads());            //espera a que todos los threads terminen de calcular
 
         /* Collision */
         CollisionCheckAP collisionCheck = new CollisionCheckAP(0, auxiliaryObjects.size(), this);
-        collisionExists = false;
+
         collisionCheck.checkAllCollisions();
         /* If collision/s exists execute sequentially on a single thread */
         if (collisionExists) {
